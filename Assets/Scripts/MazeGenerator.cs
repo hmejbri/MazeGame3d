@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class MazeGenerator : MonoBehaviour
@@ -270,43 +271,78 @@ public class MazeGenerator : MonoBehaviour
         return matrix;
     }
 
-    private void CreateWall(Vector2[,] matrix, int i, int j, GameObject box1)
+    private void CreateWall(Vector2[,] matrix, int i, int j, GameObject box1, ref int doorColumn )
     {
-        bool[,] doors = new bool[size, size];
-        for (var k = 0; k < size; k++)
-            for (var l = 0; l < size; l++)
-                doors[k, l] = false;
+        int randomDoor = -1;
+
+        //Get random position of door (top, right, bottom, left) 
+        //While respecting certain conditions
+        if (doorColumn == j)
+            do
+            {
+                if (i == 0)
+                    randomDoor = Random.Range(1, 4);
+                else if (i == size - 1)
+                {
+                    int[] tmp = { 1, 3, 4 };
+                    randomDoor = tmp[Random.Range(0, 3)];
+                }
+                else
+                    randomDoor = Random.Range(1, 5);
+            } while ((randomDoor == 1 && matrix[i, j -1].x != 3 && matrix[i, j - 1].y != 3) ||
+            (randomDoor == 4 && matrix[i - 1, j].x != 2 && matrix[i - 1, j].y != 2));
 
         //1: left     2: top     3: right     4: bottom
         if (matrix[i, j].x != 1 && matrix[i, j].y != 1)
         {
-            if ((j - 1 >= 0 && matrix[i, j - 1].x != 3 && matrix[i, j - 1].y != 3) || j - 1 < 0)
+            if(randomDoor == 1)
+            {
+                var door = Instantiate(doorPrefab, new Vector3(j, 1, i), Quaternion.identity);
+                door.transform.name = "door(" + i + ", " + j + ")";
+                door.AddComponent<DoorScript>();
+                door.transform.SetParent(doorsParent.transform);
+                door.transform.localScale = new Vector3(Vertical_wallSize.x, 1, Vertical_wallSize.y - Vertical_wallSize.x);
+            }
+            else if (j - 1 < 0)
             {
                 //creating a wall with the box sprite and changing its scale
                 var wall = Instantiate(wallPrefab, new Vector3(j, 1, i), Quaternion.identity);
                 wall.transform.name = "left";
                 wall.transform.SetParent(box1.transform);
                 wall.transform.localScale = new Vector3(Vertical_wallSize.x, 1, Vertical_wallSize.y + Vertical_wallSize.x);
-                //wall.GetComponent<BoxCollider2D>().size = new Vector2(Vertical_wallSize.y, Vertical_wallSize.y);
             }
         }
 
         if (matrix[i, j].x != 2 && matrix[i, j].y != 2)
         {
-            if ((i + 1 < size && matrix[i + 1, j].x != 4 && matrix[i + 1, j].y != 4) || i + 1 >= size)
+            if(randomDoor == 2)
+            {
+                var door = Instantiate(doorPrefab, new Vector3(j + Horizontal_wallSize.x / 2 + Horizontal_wallSize.y / 2, 1, i + Horizontal_wallSize.x / 2), Quaternion.identity);
+                door.AddComponent<DoorScript>();
+                door.transform.name = "door(" + i + ", " + j + ")";
+                door.transform.SetParent(doorsParent.transform);
+                door.transform.localScale = new Vector3(Horizontal_wallSize.x - Horizontal_wallSize.y, 1, Horizontal_wallSize.y);
+            }
+            else if ((i + 1 < size && matrix[i + 1, j].x != 4 && matrix[i + 1, j].y != 4) || i + 1 >= size)
             {
                 //creating a wall with the box sprite and changing its scale
                 var wall = Instantiate(wallPrefab, new Vector3(j + Horizontal_wallSize.x / 2, 1, i + Horizontal_wallSize.x / 2), Quaternion.identity);
                 wall.transform.name = "top";
                 wall.transform.SetParent(box1.transform);
                 wall.transform.localScale = new Vector3(Horizontal_wallSize.x, 1, Horizontal_wallSize.y);
-                //wall.GetComponent<BoxCollider>().size = new Vector2(Horizontal_wallSize.x - (Horizontal_wallSize.y / 2), Horizontal_wallSize.x - (Horizontal_wallSize.y / 2));
             }
         }
 
         if (matrix[i, j].x != 3 && matrix[i, j].y != 3)
         {
-            if ((j + 1 < size && matrix[i, j + 1].x != 1 && matrix[i, j + 1].y != 1) || j + 1 >= size)
+            if(randomDoor == 3)
+            {
+                var door = Instantiate(doorPrefab, new Vector3(j + Vertical_wallSize.y + (Vertical_wallSize.x / 2), 1, i), Quaternion.identity);
+                door.AddComponent<DoorScript>();
+                door.transform.name = "door(" + i + ", " + j + ")";
+                door.transform.SetParent(doorsParent.transform);
+                door.transform.localScale = new Vector3(Vertical_wallSize.x, 1, Vertical_wallSize.y - Vertical_wallSize.x);
+            }else if ((j + 1 < size && matrix[i, j + 1].x != 1 && matrix[i, j + 1].y != 1) || j + 1 >= size)
             {
                 //creating a wall with the box sprite and changing its scale
                 var wall = Instantiate(wallPrefab, new Vector3(j + Vertical_wallSize.y + (Vertical_wallSize.x / 2), 1, i), Quaternion.identity);
@@ -318,7 +354,14 @@ public class MazeGenerator : MonoBehaviour
 
         if (matrix[i, j].x != 4 && matrix[i, j].y != 4)
         {
-            if ((i - 1 >= 0 && matrix[i - 1, j].x != 2 && matrix[i - 1, j].y != 2) || i - 1 < 0) { 
+            if(randomDoor == 4)
+            {
+                var door = Instantiate(doorPrefab, new Vector3(j + Horizontal_wallSize.x / 2 + Horizontal_wallSize.y / 2, 1, i - Horizontal_wallSize.x / 2), Quaternion.identity);
+                door.transform.name = "door(" + i + ", " + j + ")";
+                door.AddComponent<DoorScript>();
+                door.transform.SetParent(doorsParent.transform);
+                door.transform.localScale = new Vector3(Horizontal_wallSize.x - Horizontal_wallSize.y, 1, Horizontal_wallSize.y);
+            }else if (i - 1 < 0) { 
                 //creating a wall with the box sprite and changing its scale
                 var wall = Instantiate(wallPrefab, new Vector3(j + Horizontal_wallSize.x / 2, 1, i - Horizontal_wallSize.x / 2), Quaternion.identity);
                 wall.transform.name = "bottom";
@@ -333,14 +376,18 @@ public class MazeGenerator : MonoBehaviour
     {
         nbWalls = size;
         Vector2[,] matrix = generateMatrix();
+        int doorColumn = -1;
 
         for (var i = 0; i < size; i++)
         {
+            var list = Enumerable.Range(1, size - 2).Where(a => a != doorColumn && a != doorColumn - 1 && a != doorColumn + 1).ToArray();
+            doorColumn = list[Random.Range(0, list.Length)];
+            
             for (var j = 0; j < size; j++)
             {
                 var box1 = new GameObject("box(" + i + ", " + j + ")");
                 box1.transform.SetParent(wallsParent.transform);
-                CreateWall(matrix, i, j, box1);
+                CreateWall(matrix, i, j, box1, ref doorColumn);
 
                 var floor = Instantiate(floorPrefab, new Vector3(i + (Horizontal_wallSize.x / 2), .5f, j), Quaternion.identity);
                 floor.transform.SetParent(floorsParent.transform);
